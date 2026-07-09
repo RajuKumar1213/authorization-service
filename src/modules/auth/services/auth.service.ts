@@ -5,6 +5,9 @@ import { JwtUtil } from '../../../shared/utils/jwt';
 import { BadRequestError, UnauthorizedError } from '../../../core/errors';
 import { env } from '../../../config/env';
 import dayjs from 'dayjs';
+import { db } from '../../../database';
+import { roles, permissions, rolePermissions, userRoles } from '../../../database/schema/roles';
+import { eq, inArray } from 'drizzle-orm';
 
 export class AuthService {
   constructor(
@@ -71,6 +74,32 @@ export class AuthService {
       sessionId: session.id,
     });
 
+    // Fetch user roles and permissions
+    const userRoleRecords = await db
+      .select({
+        roleName: roles.name,
+        roleId: roles.id,
+      })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(userRoles.userId, user.id));
+
+    const roleNames = userRoleRecords.map((r) => r.roleName);
+    const roleIds = userRoleRecords.map((r) => r.roleId);
+
+    let permissionRecords: any[] = [];
+    if (roleIds.length > 0) {
+      permissionRecords = await db
+        .select({
+          action: permissions.action,
+          resource: permissions.resource,
+          iconUrl: permissions.iconUrl,
+        })
+        .from(rolePermissions)
+        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(inArray(rolePermissions.roleId, roleIds));
+    }
+
     return {
       accessToken,
       refreshToken,
@@ -79,6 +108,8 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        roles: roleNames,
+        permissions: permissionRecords,
       },
     };
   }
@@ -108,6 +139,48 @@ export class AuthService {
 
     return {
       accessToken: newAccessToken,
+    };
+  }
+
+  async getMe(userId: string) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedError('User not found');
+    }
+
+    // Fetch user roles and permissions
+    const userRoleRecords = await db
+      .select({
+        roleName: roles.name,
+        roleId: roles.id,
+      })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(userRoles.userId, user.id));
+
+    const roleNames = userRoleRecords.map((r) => r.roleName);
+    const roleIds = userRoleRecords.map((r) => r.roleId);
+
+    let permissionRecords: any[] = [];
+    if (roleIds.length > 0) {
+      permissionRecords = await db
+        .select({
+          action: permissions.action,
+          resource: permissions.resource,
+          iconUrl: permissions.iconUrl,
+        })
+        .from(rolePermissions)
+        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(inArray(rolePermissions.roleId, roleIds));
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      roles: roleNames,
+      permissions: permissionRecords,
     };
   }
 

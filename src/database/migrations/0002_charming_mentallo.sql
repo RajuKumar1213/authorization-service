@@ -1,0 +1,1 @@
+ALTER TABLE "permissions" ADD COLUMN "icon_url" varchar(1024);

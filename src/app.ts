@@ -7,6 +7,7 @@ import { errorHandler } from './middlewares/error.middleware';
 import authRoutes from './modules/auth/routes';
 import orgRoutes from './modules/orgs/routes';
 import adminRoutes from './modules/admin/routes';
+import rolesRoutes from './modules/roles/routes';
 import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
@@ -45,6 +46,7 @@ app.get('/health', (_req: Request, res: Response) => {
 // API Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/orgs', orgRoutes);
+app.use('/api/v1/roles', rolesRoutes);
 
 // Swagger Docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

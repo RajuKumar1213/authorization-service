@@ -17,6 +17,7 @@ export const permissions = pgTable('permissions', {
   action: varchar('action', { length: 255 }).notNull(), // e.g. 'users:read', 'users:write'
   resource: varchar('resource', { length: 255 }).notNull(), // e.g. 'users', 'organizations'
   description: text('description'),
+  iconUrl: varchar('icon_url', { length: 1024 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 

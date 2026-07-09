@@ -8,7 +8,7 @@ export class RoleRepository {
     return role;
   }
 
-  async createPermission(data: { action: string; resource: string; description?: string }) {
+  async createPermission(data: { action: string; resource: string; description?: string; iconUrl?: string }) {
     const [permission] = await db.insert(permissions).values(data).returning();
     return permission;
   }

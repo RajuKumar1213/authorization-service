@@ -101,6 +101,20 @@ export class AuthController {
     }
   };
 
+  getMe = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as any).user?.userId;
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+      const user = await this.authService.getMe(userId);
+      res.status(200).json({ success: true, data: { user } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   setupMfa = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as any).user.userId;
