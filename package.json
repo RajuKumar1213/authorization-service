@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "npm run clean && tsc",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "vitest run",
@@ -57,7 +57,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.2.0",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^7.2.0",
     "drizzle-kit": "^0.31.10",
