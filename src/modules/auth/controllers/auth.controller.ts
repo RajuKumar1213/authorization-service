@@ -22,16 +22,23 @@ export class AuthController {
         password,
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
-        device: 'web', // Can be parsed from user-agent or sent by client
+        device: 'web',
       });
 
-      // Set refresh token in httpOnly cookie
-      const expiresInMs = require('ms')(env.REFRESH_TOKEN_EXPIRES_IN) as number;
+      const refreshExpiresInMs = require('ms')(env.REFRESH_TOKEN_EXPIRES_IN) as number;
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: expiresInMs,
+        sameSite: 'lax',
+        maxAge: refreshExpiresInMs,
+      });
+
+      const accessExpiresInMs = require('ms')(env.JWT_EXPIRES_IN || '15m') as number;
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: accessExpiresInMs,
       });
 
       res.status(200).json({
@@ -54,18 +61,18 @@ export class AuthController {
         return;
       }
 
-      // SessionId is embedded in accessToken payload, but for refresh only flow, 
-      // we usually decode an expired access token to get the sessionId, 
-      // or simply we can find the session from the refresh token hash if we store it differently.
-      // Wait, in our authService we expect sessionId and refreshToken.
-      // To get sessionId, we can decode the access token from the Authorization header (even if expired).
-      const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith('Bearer ')) {
+      let token = '';
+      if (req.headers.authorization?.startsWith('Bearer ')) {
+        token = req.headers.authorization.split(' ')[1];
+      } else if (req.cookies?.accessToken) {
+        token = req.cookies.accessToken;
+      }
+
+      if (!token) {
         res.status(401).json({ success: false, error: { message: 'Access token missing' } });
         return;
       }
 
-      const token = authHeader.split(' ')[1];
       const jwt = require('jsonwebtoken');
       let payload: any;
       try {
@@ -76,6 +83,14 @@ export class AuthController {
       }
 
       const { accessToken } = await this.authService.refresh(payload.sessionId, refreshToken);
+
+      const accessExpiresInMs = require('ms')(env.JWT_EXPIRES_IN || '15m') as number;
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: accessExpiresInMs,
+      });
 
       res.status(200).json({
         success: true,
@@ -95,6 +110,7 @@ export class AuthController {
         await this.authService.logout(sessionId);
       }
       res.clearCookie('refreshToken');
+      res.clearCookie('accessToken');
       res.status(200).json({ success: true, message: 'Logged out successfully' });
     } catch (error) {
       next(error);

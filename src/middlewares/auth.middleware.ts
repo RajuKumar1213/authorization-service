@@ -8,12 +8,18 @@ const sessionRepository = new SessionRepository();
 
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    let token = '';
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedError('Missing or invalid authorization header');
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.cookies && req.cookies.accessToken) {
+      token = req.cookies.accessToken;
     }
 
-    const token = authHeader.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedError('Missing or invalid authorization token');
+    }
     let payload;
     try {
       payload = JwtUtil.verifyToken(token);

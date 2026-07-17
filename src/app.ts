@@ -16,19 +16,35 @@ const app = express();
 
 // Security Middlewares
 app.use(helmet());
+
+// Configure CORS correctly for credentials
+const allowedOrigins = [
+  "http://localhost:3008",
+  "http://localhost:3000",
+  "https://authorization-service-4shj.onrender.com"
+];
+
+if (process.env.CORS_ORIGIN) {
+  allowedOrigins.push(process.env.CORS_ORIGIN);
+}
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie", "x-user-id"],
   })
 );
-
-app.use(cors({
-  origin:"*",
-  credentials:true,
-  methods:["GET","POST","PUT","DELETE","OPTIONS"],
-  allowedHeaders:["Content-Type","Authorization","Cookie"],
-}))
 
 // Rate Limiting
 const limiter = rateLimit({

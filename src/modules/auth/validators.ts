@@ -20,7 +20,4 @@ export const refreshSchema = z.object({
   cookies: z.object({
     refreshToken: z.string().min(1),
   }).passthrough(),
-  headers: z.object({
-    authorization: z.string().min(1), // Optional, just to verify access token format
-  }).passthrough().optional(),
 });
